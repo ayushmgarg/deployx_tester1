@@ -1,0 +1,2 @@
+Hello from DeployX documents!
+If you can read this at <public-url>/files/sample.txt, document hosting works.
