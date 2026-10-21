@@ -4,8 +4,7 @@ tasks:
   test:
     steps:
       - name: Unit tests
-        command: node test.js
-        image: node:20-alpine       # runs in a container: no Node needed on the runner
+        command: node test.js       # runs on the runner (it already has Node 20+)
 
   deploy:
     depends_on: [test]
