@@ -1,35 +1,75 @@
-# deployx_tester1
+# DeployX Tester
 
-Minimal app for testing [DeployX](https://github.com/epshukla/DevOps-Deployment-Tool) deployments. It has a web page, `GET /health`, and links to documents served at `/files/`.
+A small website for testing a DeployX deployment end to end: blue-green deploys, the public Cloudflare URL, and **document hosting** (files uploaded in DeployX served at `/files/`).
 
-## Test steps
-
-1. In DeployX, create a **new project** with this repo's URL (branch `main`, Dockerfile `./Dockerfile`).
-2. Go to **Pipelines → New pipeline** and paste [`deployx.yaml`](deployx.yaml).
-3. Start a runner with Docker running (`pnpm runner start`), then click **Trigger Pipeline**.
-4. Open the deployment's **public URL** (`https://….trycloudflare.com`). The page should show *Health: ok*.
-5. In the **Documents** tab, upload the files from [`sample-docs/`](sample-docs) as **public**:
-   - `sample.txt` with path `sample.txt`
-   - `sample.pdf` with path `sample.pdf`
-   - `guides/readme.md` with path `guides/readme.md`
-
-   Within about a minute the links on the page turn **✓ served**, at `<public URL>/files/<path>`.
-
-## More checks (optional)
-
-- Make a document **private**: `/files/` returns 404 for it, but it still downloads from the dashboard.
-- Upload a new version of a file, then restore the old one from version history.
-- Change `APP_VERSION` in the pipeline and re-run: the version and container name on the page change (blue-green).
-- Send more than 30 quick requests: you get `429` responses (rate limit).
-
-## Run locally
+## Quick Start
 
 ```bash
-node test.js
+npm install
+npm start
+# Open http://localhost:3000
 ```
+
+## Endpoints
+
+| Path | Response |
+|------|----------|
+| `/` | HTML page: live status + document checks |
+| `/health` | `{"status":"healthy"}` — required by DeployX |
+| `/api/status` | Version, container name, uptime, memory |
+| `/api/documents` | Sample documents the page checks |
+| `/files/<path>` | Served by the **DeployX proxy** (not this app) once uploaded |
+
+## Running Tests
 
 ```bash
-node server.js
+npm test
 ```
 
-Then open http://localhost:3000.
+## Docker
+
+```bash
+docker build -t deployx-tester .
+docker run -p 3000:3000 deployx-tester
+```
+
+## DeployX Pipeline
+
+The `deployx.yaml` defines a two-stage pipeline:
+
+1. **test** — Install deps + run contract tests
+2. **build** — Build Docker image + deploy with blue-green strategy (public URL, CPU/memory limits, rate limit)
+
+## Testing Document Hosting
+
+1. Create a DeployX project from this repo, paste `deployx.yaml` as a pipeline, and run it.
+2. Open the deployment's public URL (`https://….trycloudflare.com`). Health should read **healthy**.
+3. On the project's **Documents** tab, upload these files from `sample-docs/` as **public**:
+
+   | File | Path |
+   |------|------|
+   | `sample-docs/sample.txt` | `sample.txt` |
+   | `sample-docs/sample.pdf` | `sample.pdf` |
+   | `sample-docs/guides/readme.md` | `guides/readme.md` |
+
+4. Within a minute, click **Re-check** on the page. Each document shows **✓ served**.
+
+More checks:
+- **Private:** switch a document to private. `/files/` returns 404 for it, but it still downloads from the dashboard.
+- **Versions:** upload a new version, then restore the old one.
+- **Blue-green:** change `APP_VERSION` and re-run. The version and container on the page change.
+- **Rate limit:** more than 30 rapid requests return `429`.
+
+## Project Structure
+
+```
+├── server.js         # Express server (static files + API)
+├── public/
+│   ├── index.html    # Status + documents page
+│   ├── style.css     # Dark theme styles
+│   └── app.js        # Client-side status & document checks
+├── sample-docs/      # Files to upload on the Documents tab
+├── Dockerfile        # Production image
+├── deployx.yaml      # Pipeline configuration
+└── test.js           # Contract tests
+```

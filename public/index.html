@@ -4,63 +4,39 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DeployX Tester</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; background: #0b1326; color: #dae2fd; }
-    h1 { font-size: 1.4rem; } h2 { font-size: 1.1rem; } a { color: #adc6ff; }
-    .card { background: #131b2e; border: 1px solid #2d3449; border-radius: 8px; padding: 16px; margin: 16px 0; }
-    code { background: #222a3d; padding: 2px 6px; border-radius: 4px; }
-    input { padding: 6px; width: 60%; background: #222a3d; color: inherit; border: 1px solid #424754; border-radius: 4px; }
-    button { padding: 6px 12px; background: #adc6ff; color: #002e6a; border: 0; border-radius: 4px; font-weight: 600; cursor: pointer; }
-    .ok { color: #4ae176; } .bad { color: #ffb4ab; }
-  </style>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>DeployX Tester</h1>
+  <header>
+    <h1>DeployX Tester</h1>
+    <p class="subtitle">Deployment &amp; document hosting check</p>
+  </header>
 
-  <div class="card">
-    <p>Version <code>{{VERSION}}</code> · container <code>{{HOST}}</code></p>
-    <p>Health: <span id="health">checking…</span></p>
-    <p><small>Change APP_VERSION and redeploy: the version and container change (blue ↔ green).</small></p>
-  </div>
+  <main>
+    <section class="card">
+      <h2>Deployment</h2>
+      <dl class="stats">
+        <div><dt>Health</dt><dd id="health">checking…</dd></div>
+        <div><dt>Version</dt><dd id="version">—</dd></div>
+        <div><dt>Container</dt><dd id="container">—</dd></div>
+        <div><dt>Uptime</dt><dd id="uptime">—</dd></div>
+      </dl>
+      <p class="hint">Change <code>APP_VERSION</code> in the pipeline and re-run: version and container change (blue ↔ green).</p>
+    </section>
 
-  <div class="card">
-    <h2>Documents</h2>
-    <p>Upload the files from <code>sample-docs/</code> in DeployX → project → <b>Documents</b> as public. They show up here within a minute.</p>
-    <ul>
-      <li><a href="/files/sample.txt">/files/sample.txt</a> <span data-check="/files/sample.txt"></span></li>
-      <li><a href="/files/sample.pdf">/files/sample.pdf</a> <span data-check="/files/sample.pdf"></span></li>
-      <li><a href="/files/guides/readme.md">/files/guides/readme.md</a> <span data-check="/files/guides/readme.md"></span></li>
-    </ul>
-    <form id="open">
-      <input id="path" placeholder="any path, e.g. guides/setup.pdf">
-      <button>Open</button>
-    </form>
-  </div>
+    <section class="card">
+      <h2>Documents</h2>
+      <p>Upload the files from <code>sample-docs/</code> on the project's <b>Documents</b> tab as <b>public</b>. They are served here under <code>/files/</code> within a minute.</p>
+      <ul id="documents" class="documents"></ul>
+      <form id="open-form" class="open-form">
+        <input id="open-path" placeholder="any path, e.g. guides/setup.pdf" aria-label="Document path">
+        <button type="submit">Open</button>
+      </form>
+      <button id="recheck" class="secondary">Re-check</button>
+    </section>
+  </main>
 
-  <script>
-    fetch("/health")
-      .then((r) => r.json())
-      .then((h) => {
-        document.getElementById("health").innerHTML =
-          '<span class="ok">' + h.status + "</span> (started " + h.started + ")";
-      })
-      .catch(() => {
-        document.getElementById("health").innerHTML = '<span class="bad">down</span>';
-      });
-
-    document.querySelectorAll("[data-check]").forEach((el) => {
-      fetch(el.dataset.check, { method: "HEAD" }).then((r) => {
-        el.innerHTML = r.ok
-          ? '<span class="ok">✓ served</span>'
-          : '<span class="bad">not uploaded yet (' + r.status + ")</span>";
-      });
-    });
-
-    document.getElementById("open").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const p = document.getElementById("path").value.trim().replace(/^\/+/, "");
-      if (p) window.open("/files/" + p, "_blank");
-    });
-  </script>
+  <footer>Served through DeployX · nginx proxy · Cloudflare tunnel</footer>
+  <script src="/app.js"></script>
 </body>
 </html>

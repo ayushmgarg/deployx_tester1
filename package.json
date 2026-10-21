@@ -1,9 +1,14 @@
 {
-  "name": "deployx_tester1",
+  "name": "deployx-tester",
   "version": "1.0.0",
-  "private": true,
+  "description": "DeployX tester: blue-green deploys, public URL and document hosting",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "node --watch server.js",
     "test": "node test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
   }
 }

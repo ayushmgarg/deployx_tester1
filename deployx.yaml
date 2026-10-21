@@ -1,32 +1,34 @@
-# Paste this into DeployX → project → Pipelines → New pipeline.
-name: tester-pipeline
+name: deployx-tester-pipeline
 tasks:
   test:
     steps:
-      - name: Unit tests
-        command: node test.js       # runs on the runner (it already has Node 20+)
+      - name: Install dependencies
+        command: npm ci
+      - name: Run tests
+        command: npm test
 
-  deploy:
+  build:
     depends_on: [test]
     steps:
-      - name: Ready
-        command: echo "deploying ${{ git.short_sha }}"
+      - name: Build Docker image
+        command: docker build -t deployx-tester:${{ git.short_sha }} .
     deploy:
-      driver: docker_local          # or: auto (cloud broker)
-      strategy: blue_green          # or: canary | rolling
+      driver: docker_local
+      strategy: blue_green
       port: 3000
-      # no image: the runner builds ./Dockerfile
+      image: deployx-tester:${{ git.short_sha }}
       health_check:
         path: /health
-      public_url: true              # Cloudflare link; documents at <link>/files/<path>
+        interval_seconds: 10
+        timeout_seconds: 5
+        retries: 3
+        start_period_seconds: 15
+      public_url: true            # Cloudflare link; documents at <link>/files/<path>
       env:
-        APP_VERSION: "1.0.0"        # bump and re-run to see the blue-green switch
+        APP_VERSION: "1.0.0"      # bump and re-run to see the blue-green switch
       resources:
         cpus: 0.5
         memory_mb: 256
-      rate_limit:                   # more than 10 req/s per visitor gets 429
+      rate_limit:                 # more than 10 req/s per visitor gets 429
         requests_per_second: 10
         burst: 20
-      # security_scan:              # uncomment to scan with Trivy (~200 MB download)
-      #   severity: [HIGH, CRITICAL]
-      #   fail_on_findings: false
